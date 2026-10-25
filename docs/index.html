@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#090f1d">
+<title>Conway — Game of Life</title>
+<style>
+:root{color-scheme:dark;--bg:#080e19;--panel:#111b2c;--line:#26344b;--text:#edf5ff;--muted:#8c9ab0;--accent:#43e6bc;--cyan:#69dff9}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 55% -20%,#173552 0%,#0b1525 42%,var(--bg) 80%);font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;color:var(--text);min-height:100vh}
+.shell{max-width:1180px;margin:auto;padding:35px 22px 50px}.topline{display:flex;gap:12px;justify-content:space-between;align-items:center;margin-bottom:27px}.eyebrow{font-size:11px;letter-spacing:.24em;color:var(--cyan);font-weight:800}.pill{border:1px solid #31544f;color:#85e7c5;border-radius:99px;font-size:11px;letter-spacing:.09em;font-weight:800;padding:8px 12px;display:inline-flex;gap:8px;align-items:center}.dot{width:7px;height:7px;background:var(--accent);border-radius:50%;box-shadow:0 0 10px var(--accent)}.pill.paused{border-color:#62573f;color:#f3d389}.pill.paused .dot{background:#edba68;box-shadow:none}
+h1{margin:0;font-size:clamp(30px,4vw,51px);letter-spacing:-.05em;line-height:1.05;font-weight:800}.subtitle{color:var(--muted);margin:12px 0 28px;font-size:14px}.dashboard{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px}.stat,.board-wrap,.controls,.help{border:1px solid var(--line);background:linear-gradient(145deg,#142136,#101a2b);border-radius:15px}.stat{padding:20px 21px}.stat-label{color:var(--muted);font-size:11px;font-weight:700;letter-spacing:.14em}.stat-value{margin-top:9px;font-size:29px;letter-spacing:-.04em;font-weight:750;font-variant-numeric:tabular-nums}.stat-value.green{color:var(--accent)}.stat-unit{font-size:13px;color:var(--muted);font-weight:500;margin-left:3px}
+.board-wrap{padding:19px 21px 17px}.board-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:16px}.section-title{font-weight:750;font-size:13px;letter-spacing:.05em}.board-note{font-size:12px;color:var(--muted)}.canvas-shell{overflow:hidden;background:#0b1424;border:1px solid #2b3a50;border-radius:10px;padding:12px}canvas{display:block;width:100%;height:auto;cursor:crosshair;touch-action:none}.legend{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-top:16px;font-size:12px;color:var(--muted)}.legend-group{display:flex;gap:18px}.swatch{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:7px}.legend .hint{color:#647690}.progress-head{display:flex;justify-content:space-between;margin:20px 0 10px;color:var(--muted);font-size:11px;font-weight:700;letter-spacing:.11em}.track{background:#25334a;height:7px;border-radius:20px;overflow:hidden}.fill{height:100%;width:0;background:linear-gradient(90deg,#32b9be,#48e4ad);transition:width .16s ease}
+.controls{margin-top:17px;padding:19px 21px;display:grid;grid-template-columns:1fr 1fr;gap:23px}.control-title{font-size:11px;color:var(--muted);letter-spacing:.15em;font-weight:800;margin-bottom:12px}.actions{display:flex;gap:9px;flex-wrap:wrap}button,.file-label{font:inherit;cursor:pointer;border-radius:9px;border:1px solid #34455d;background:#1a2a40;color:#e4f0fa;padding:11px 15px;font-weight:720;font-size:12px;transition:background .14s,transform .14s}button:hover,.file-label:hover{background:#273c55}button:active,.file-label:active{transform:translateY(1px)}button.primary{background:var(--accent);color:#07271f;border-color:var(--accent)}button.primary:hover{background:#85f7d7}button:focus-visible,input:focus-visible,.file-label:focus-visible{outline:2px solid var(--cyan);outline-offset:3px}.settings{display:grid;grid-template-columns:1fr 1fr;gap:15px}.setting-label{font-size:12px;color:#dae6f6;display:flex;justify-content:space-between;margin-bottom:10px}input[type=range]{width:100%;accent-color:var(--accent);cursor:pointer}select{background:#1c2c43;color:var(--text);border:1px solid #34455d;border-radius:8px;padding:8px 11px;font:inherit;font-size:12px;width:100%}.undercontrols{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:16px;align-items:center}.file-label{display:inline-flex;align-items:center;gap:7px}.file-label input{display:none}.note{font-size:12px;color:var(--muted);min-height:20px}.help{margin-top:17px;padding:16px 20px;display:flex;gap:10px;align-items:baseline;font-size:12px;color:var(--muted)}.help b{color:#cbd8e9}footer{margin-top:26px;font-size:11px;color:#65758c;text-align:center}
+@media(max-width:740px){.dashboard{grid-template-columns:repeat(2,1fr)}.controls{grid-template-columns:1fr}.stat{padding:15px}.board-wrap{padding:13px}.canvas-shell{padding:5px}.board-note{font-size:10px}.help{display:block}.shell{padding:24px 12px}}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<main class="shell">
+<div class="topline"><span class="eyebrow">CELLULAR AUTOMATA / SIMULATOR</span><span id="status" class="pill paused"><span class="dot"></span><span id="statusText">EN PAUSE</span></span></div>
+<h1>Conway’s <span style="color:var(--accent)">Game of Life.</span></h1>
+<p class="subtitle">Un univers où quelques règles simples donnent naissance à des motifs complexes.</p>
+<section class="dashboard" aria-label="Statistiques">
+<div class="stat"><div class="stat-label">GÉNÉRATION</div><div class="stat-value" id="generation">000</div></div>
+<div class="stat"><div class="stat-label">CELLULES VIVANTES</div><div class="stat-value green" id="alive">024</div></div>
+<div class="stat"><div class="stat-label">GRILLE</div><div class="stat-value">40 × 80</div></div>
+<div class="stat"><div class="stat-label">VITESSE</div><div class="stat-value"><span id="speedValue">200</span><span class="stat-unit">ms</span></div></div>
+</section>
+<section class="board-wrap" aria-label="Simulation">
+<div class="board-head"><span class="section-title">UNIVERS CELLULAIRE</span><span class="board-note">Cliquez ou glissez pour dessiner des cellules</span></div>
+<div class="canvas-shell"><canvas id="grid" width="960" height="480" aria-label="Grille de 40 lignes et 80 colonnes" role="img"></canvas></div>
+<div class="legend"><div class="legend-group"><span><i class="swatch" id="liveLegend" style="background:#43e6bc"></i>Vivante</span><span><i class="swatch" style="background:#26364c"></i>Morte</span></div><span class="hint">Règles classiques de Conway · 8 voisins</span></div>
+<div class="progress-head"><span>PROGRESSION</span><span id="progressText">0 / 100 générations · 0%</span></div><div class="track" role="progressbar" aria-label="Progression" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="progressBar"><div class="fill" id="progressFill"></div></div>
+</section>
+<section class="controls" aria-label="Commandes">
+<div><div class="control-title">COMMANDES</div><div class="actions"><button id="play" class="primary">▶ Démarrer</button><button id="step">⏭ Étape +1</button><button id="reset">↻ Réinitialiser</button><button id="random">⚄ Aléatoire</button></div></div>
+<div><div class="control-title">PERSONNALISATION</div><div class="settings"><div><label class="setting-label" for="speed">Vitesse <span id="speedLabel">200 ms</span></label><input type="range" id="speed" min="50" max="1000" step="50" value="200"></div><div><label class="setting-label" for="color">Couleur des cellules</label><select id="color"><option value="#43e6bc">Vert menthe</option><option value="#69dff9">Cyan</option><option value="#ff7f91">Rouge corail</option><option value="#f5c76b">Jaune</option><option value="#b99bff">Violet</option><option value="#f0f6ff">Blanc</option></select></div></div></div>
+</section>
+<div class="undercontrols"><div class="actions"><button id="puffer">↺ Motif Puffer</button><label for="file" class="file-label" tabindex="0">↑ Importer un .txt<input id="file" type="file" accept=".txt,text/plain"></label><button id="clear">Effacer la grille</button></div><span class="note" id="note" role="status">Motif puffer chargé : 24 cellules.</span></div>
+<div class="help"><b>Comment ça marche ?</b><span>Une cellule vivante survit avec 2 ou 3 voisines ; une cellule morte naît avec exactement 3 voisines. Les cellules situées hors de la grille sont considérées mortes.</span></div>
+<footer>PROJET TP MATRICES · CONWAY’S GAME OF LIFE · HTML / CSS / JAVASCRIPT</footer>
+</main>
+<script>
+(() => {
+'use strict';
+const N = 40, M = 80, LIMIT = 100;
+const PUFFER = `14 2 14 3 14 4 14 5
+15 1 15 5
+16 5
+17 1 17 4
+20 2
+21 3
+22 3
+23 2 23 3
+24 1
+28 2 28 3 28 4 28 5
+29 1 29 5
+30 5
+31 1 31 4`;
+const el = id => document.getElementById(id);
+const canvas = el('grid'), ctx = canvas.getContext('2d');
+let cells = new Uint8Array(N*M), seed = new Uint8Array(N*M), generation=0, interval=null, speed=200, color='#43e6bc', drawing=false, drawingValue=1;
+const index=(r,c)=>r*M+c;
+const coordsToGrid=(input)=>{
+  const values=input.trim().split(/\s+/).map(Number);
+  if (values.length%2!==0 || values.some(n=>!Number.isInteger(n))) throw new Error('Le fichier doit contenir des paires de coordonnées entières.');
+  const g=new Uint8Array(N*M); let invalid=0;
+  for(let k=0;k<values.length;k+=2){const r=values[k],c=values[k+1];if(r>=0&&r<N&&c>=0&&c<M)g[index(r,c)]=1;else invalid++;}
+  return {grid:g,invalid};
+};
+function note(msg){el('note').textContent=msg;}
+function load(g,msg){pause();cells=g.slice();seed=g.slice();generation=0;render();note(msg);}
+function pause(){if(interval!==null){clearInterval(interval);interval=null;}el('play').textContent='▶ Démarrer';el('status').classList.add('paused');el('statusText').textContent='EN PAUSE';}
+function start(){if(interval!==null)return;if(generation>=LIMIT){note('100 générations atteintes : réinitialisez pour recommencer.');return;}el('play').textContent='Ⅱ Pause';el('status').classList.remove('paused');el('statusText').textContent='EN COURS';interval=setInterval(step,speed);}
+function nextGeneration(){
+ const neighbors=new Uint8Array(N*M);
+ // Même méthode que le TP : d’abord tous les voisins, puis la génération suivante.
+ for(let r=0;r<N;r++)for(let c=0;c<M;c++){
+  let n=0;
+  for(let dr=-1;dr<=1;dr++)for(let dc=-1;dc<=1;dc++){
+   if(dr===0&&dc===0)continue;
+   const rr=r+dr,cc=c+dc;
+   if(rr>=0&&rr<N&&cc>=0&&cc<M&&cells[index(rr,cc)])n++;
+  }
+  neighbors[index(r,c)]=n;
+ }
+ for(let k=0;k<cells.length;k++)cells[k]=cells[k]?(neighbors[k]===2||neighbors[k]===3?1:0):(neighbors[k]===3?1:0);
+ generation++;
+}
+function step(){if(generation>=LIMIT){pause();return;}nextGeneration();render();if(generation>=LIMIT){pause();note('Simulation terminée : 100 générations effectuées.');}}
+function render(){
+ const w=canvas.width/M,h=canvas.height/N;
+ ctx.fillStyle='#111d30';ctx.fillRect(0,0,canvas.width,canvas.height);
+ for(let r=0;r<N;r++)for(let c=0;c<M;c++){
+  ctx.fillStyle=cells[index(r,c)]?color:'#26364c';
+  ctx.fillRect(c*w+1,r*h+1,w-2,h-2);
+ }
+ el('generation').textContent=String(generation).padStart(3,'0');
+ el('alive').textContent=String(cells.reduce((a,b)=>a+b,0)).padStart(3,'0');
+ const pct=Math.round(generation/LIMIT*100);
+ el('progressFill').style.width=pct+'%';
+ el('progressText').textContent=`${generation} / ${LIMIT} générations · ${pct}%`;
+ el('progressBar').setAttribute('aria-valuenow',String(pct));
+ el('liveLegend').style.background=color;
+}
+function paint(ev){
+ const rect=canvas.getBoundingClientRect(), c=Math.floor((ev.clientX-rect.left)/rect.width*M),r=Math.floor((ev.clientY-rect.top)/rect.height*N);
+ if(r<0||r>=N||c<0||c>=M)return;
+ cells[index(r,c)]=drawingValue;seed=cells.slice();generation=0;render();
+}
+canvas.addEventListener('pointerdown',ev=>{pause();drawing=true;const rect=canvas.getBoundingClientRect(),r=Math.floor((ev.clientY-rect.top)/rect.height*N),c=Math.floor((ev.clientX-rect.left)/rect.width*M);if(r<0||r>=N||c<0||c>=M)return;drawingValue=cells[index(r,c)]?0:1;canvas.setPointerCapture(ev.pointerId);paint(ev);note('Grille modifiée manuellement.');});
+canvas.addEventListener('pointermove',ev=>{if(drawing)paint(ev);});
+canvas.addEventListener('pointerup',()=>drawing=false);canvas.addEventListener('pointercancel',()=>drawing=false);
+el('play').addEventListener('click',()=>interval===null?start():pause());
+el('step').addEventListener('click',()=>{pause();step();});
+el('reset').addEventListener('click',()=>load(seed,'Motif initial restauré.'));
+el('clear').addEventListener('click',()=>load(new Uint8Array(N*M),'Grille effacée : dessinez un motif.'));
+el('random').addEventListener('click',()=>{const g=new Uint8Array(N*M);for(let k=0;k<g.length;k++)g[k]=Math.random()<.19?1:0;load(g,'Configuration aléatoire chargée.');});
+el('puffer').addEventListener('click',()=>load(coordsToGrid(PUFFER).grid,'Motif puffer chargé : 24 cellules.'));
+el('speed').addEventListener('input',ev=>{speed=Number(ev.target.value);el('speedValue').textContent=speed;el('speedLabel').textContent=speed+' ms';if(interval!==null){pause();start();}});
+el('color').addEventListener('change',ev=>{color=ev.target.value;render();});
+el('file').addEventListener('change',async ev=>{const file=ev.target.files?.[0];if(!file)return;try{const result=coordsToGrid(await file.text());load(result.grid,`${file.name} chargé${result.invalid?' · '+result.invalid+' coordonnées ignorées':''}.`);}catch(err){note('Erreur : '+err.message);}ev.target.value='';});
+el('file').parentElement.addEventListener('keydown',ev=>{if(ev.key==='Enter'||ev.key===' '){ev.preventDefault();el('file').click();}});
+load(coordsToGrid(PUFFER).grid,'Motif puffer chargé : 24 cellules.');
+})();
+</script>
+</body>
+</html>
